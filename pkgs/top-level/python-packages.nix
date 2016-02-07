@@ -14924,12 +14924,63 @@ in modules // {
     };
   };
 
-  pillow = buildPythonPackage rec {
+  pillow_2_9_0 = buildPythonPackage rec {
     name = "Pillow-2.9.0";
 
     src = pkgs.fetchurl {
       url = "http://pypi.python.org/packages/source/P/Pillow/${name}.zip";
       sha256 = "1mal92cwh85z6zqx7lrmg0dbqb2gw2cbb2fm6xh0fivmszz8vnyi";
+    };
+
+    # Check is disabled because of assertion errors, see
+    # https://github.com/python-pillow/Pillow/issues/1259
+    doCheck = false;
+
+    buildInputs = with self; [
+      pkgs.freetype pkgs.libjpeg pkgs.zlib pkgs.libtiff pkgs.libwebp pkgs.tcl nose ]
+      ++ optionals (isPy26 || isPy27 || isPy33 || isPyPy) [ pkgs.lcms2 ]
+      ++ optionals (isPyPy) [ pkgs.tk pkgs.xorg.libX11 ];
+
+    # NOTE: we use LCMS_ROOT as WEBP root since there is not other setting for webp.
+    preConfigure = ''
+      sed -i "setup.py" \
+          -e 's|^FREETYPE_ROOT =.*$|FREETYPE_ROOT = _lib_include("${pkgs.freetype}")|g ;
+              s|^JPEG_ROOT =.*$|JPEG_ROOT = _lib_include("${pkgs.libjpeg}")|g ;
+              s|^ZLIB_ROOT =.*$|ZLIB_ROOT = _lib_include("${pkgs.zlib}")|g ;
+              s|^LCMS_ROOT =.*$|LCMS_ROOT = _lib_include("${pkgs.libwebp}")|g ;
+              s|^TIFF_ROOT =.*$|TIFF_ROOT = _lib_include("${pkgs.libtiff}")|g ;
+              s|^TCL_ROOT=.*$|TCL_ROOT = _lib_include("${pkgs.tcl}")|g ;'
+    ''
+    # Remove impurities
+    + stdenv.lib.optionalString stdenv.isDarwin ''
+      substituteInPlace setup.py \
+        --replace '"/Library/Frameworks",' "" \
+        --replace '"/System/Library/Frameworks"' ""
+    '';
+
+    meta = {
+      homepage = "https://python-pillow.github.io/";
+
+      description = "Fork of The Python Imaging Library (PIL)";
+
+      longDescription = ''
+        The Python Imaging Library (PIL) adds image processing
+        capabilities to your Python interpreter.  This library
+        supports many file formats, and provides powerful image
+        processing and graphics capabilities.
+      '';
+
+      license = "http://www.pythonware.com/products/pil/license.htm";
+
+      maintainers = with maintainers; [ goibhniu prikhi ];
+    };
+  };
+  pillow_3_1_1 = buildPythonPackage rec {
+    name = "Pillow-3.1.1";
+
+    src = pkgs.fetchurl {
+      url = "http://pypi.python.org/packages/source/P/Pillow/${name}.zip";
+      sha256 = "18729h0qwx0ibmv92rh67x3drh1fijin1vqs2ykqibjlzjlv3177";
     };
 
     # Check is disabled because of assertion errors, see
